@@ -2,13 +2,35 @@
 # Groq Chat PWA のロジック本体。Pyodide上で実行され、
 # DOM操作・localStorage・fetch はすべて js モジュール経由でブラウザAPIを直接呼び出す。
 
+import asyncio
 import json
 import re
 import time
 
 from js import document, localStorage, window, fetch, console
 from pyodide.ffi import create_proxy, to_js
-from pyodide.ffi.wrappers import add_event_listener
+
+
+def async_handler(coro_func):
+    """async def のイベントハンドラを addEventListener に渡せる形にする。
+    Pyodide はコルーチン関数をそのままイベントハンドラとして呼んでも
+    自動では await/スケジュールしないため、同期関数でラップして
+    asyncio.ensure_future に積む。
+    """
+
+    def wrapper(*args):
+        asyncio.ensure_future(coro_func(*args))
+
+    return create_proxy(wrapper)
+
+
+def add_event_listener(elt, event, handler):
+    """pyodide.ffi.wrappers.add_event_listener はリスナー登録の管理に
+    JsProxy をハッシュキーとして使うため 'unhashable type' で失敗することがある。
+    ここでは create_proxy したハンドラを素の addEventListener に渡すだけの
+    シンプルな版を使う（このアプリでは個別のremoveは不要なため問題ない）。
+    """
+    elt.addEventListener(event, handler)
 
 
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
@@ -331,7 +353,7 @@ async def on_submit(event):
     save_chats()
 
 
-add_event_listener(input_form, "submit", create_proxy(on_submit))
+add_event_listener(input_form, "submit", async_handler(on_submit))
 
 
 # ---------------------------------------------------------------------------
