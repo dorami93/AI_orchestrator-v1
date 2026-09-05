@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Groq Chat</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Groq Chat">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="loadingOverlay">
+  <div id="loadingBox">
+    <div id="loadingSpinner"></div>
+    <p id="loadingText">Pythonランタイムを読み込み中...</p>
+  </div>
+</div>
+
+<div id="sidebar">
+  <button id="newChatBtn">＋ 新規チャット</button>
+  <div id="chatList"></div>
+  <button id="settingsBtn">設定</button>
+</div>
+<div id="main">
+  <div id="topbar">
+    <button id="menuBtn">☰</button>
+    <span id="chatTitle">Groq Chat</span>
+  </div>
+  <div id="messages"></div>
+  <form id="inputForm">
+    <textarea id="input" placeholder="メッセージを入力..." rows="1"></textarea>
+    <button id="sendBtn" type="submit">送信</button>
+  </form>
+</div>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modalBox">
+    <h2>設定</h2>
+    <label>Groq APIキー</label>
+    <input id="apiKeyInput" type="password" placeholder="gsk_...">
+    <label>モデル</label>
+    <input id="modelInput" type="text" placeholder="llama-3.3-70b-versatile">
+    <div class="modalBtns">
+      <button id="saveSettingsBtn">保存</button>
+      <button id="closeSettingsBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pyodide (ブラウザ内Pythonランタイム) -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+async function boot() {
+  const loadingText = document.getElementById('loadingText');
+  try {
+    const pyodide = await loadPyodide();
+    window.pyodide = pyodide;
+    loadingText.textContent = 'アプリを起動中...';
+
+    const res = await fetch('app.py');
+    if (!res.ok) throw new Error('app.py の取得に失敗しました: ' + res.status);
+    const code = await res.text();
+
+    await pyodide.runPythonAsync(code);
+
+    document.getElementById('loadingOverlay').remove();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  } catch (err) {
+    console.error(err);
+    loadingText.textContent = '読み込みエラー: ' + err.message;
+  }
+}
+boot();
+</script>
+</body>
+</html>
