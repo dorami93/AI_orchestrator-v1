@@ -61,11 +61,19 @@ async function boot() {
     window.pyodide = pyodide;
     loadingText.textContent = 'アプリを起動中...';
 
-    const res = await fetch('app.py?v=' + Date.now(), { cache: 'no-store' });
-    if (!res.ok) throw new Error('app.py の取得に失敗しました: ' + res.status);
-    const code = await res.text();
+    // main.py が call_llm.py / output.py を import できるよう、
+    // 先に全ファイルを取得して Pyodide の仮想ファイルシステムに書き込む。
+    const modules = ['output.py', 'call_llm.py', 'main.py'];
+    const cacheBuster = 'v=' + Date.now();
 
-    await pyodide.runPythonAsync(code);
+    for (const name of modules) {
+      const res = await fetch(name + '?' + cacheBuster, { cache: 'no-store' });
+      if (!res.ok) throw new Error(name + ' の取得に失敗しました: ' + res.status);
+      const code = await res.text();
+      pyodide.FS.writeFile(name, code);
+    }
+
+    await pyodide.runPythonAsync('import main');
 
     document.getElementById('loadingOverlay').remove();
 
