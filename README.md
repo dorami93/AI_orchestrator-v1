@@ -33,9 +33,13 @@ GitHub Pagesにそのまま置くだけで動作します。
 
 ## 仕組み（Pyodideベース）
 
-- `index.html` が CDN 経由で Pyodide を読み込み、`app.py` を取得して実行します
-- `app.py` はチャット履歴管理・Markdown変換・localStorage操作・Groq APIとのストリーミング通信など、
-  旧`app.js`が担っていたロジックをすべてPythonで実装したものです
+- `index.html` が CDN 経由で Pyodide を読み込み、`output.py` → `call_llm.py` → `main.py` の順に
+  取得して Pyodide の仮想ファイルシステムに書き込んだ後、`import main` でアプリを起動します
+- ロジックは役割ごとに3ファイルに分割しています
+  - `main.py` — エントリーポイント。DOM取得、チャット状態管理（localStorage）、
+    イベント登録、`call_llm`/`output`の呼び出しを行うオーケストレーション役
+  - `call_llm.py` — Groq APIへのプロンプト送信とストリーミング応答の受信
+  - `output.py` — 簡易Markdown→HTML変換と、メッセージ表示・コードコピー機能
 - DOM操作やfetch、localStorageなどのブラウザAPIは、Pyodideの`js`モジュール経由でPythonから直接呼び出しています
 - 画面構造（HTML）とスタイル（CSS）は従来のまま変更していません
 
@@ -43,7 +47,9 @@ GitHub Pagesにそのまま置くだけで動作します。
 
 - `index.html` - 画面構造 ＋ Pyodideの読み込み・起動処理
 - `style.css` - スタイル（ローディング画面のスタイルを追加）
-- `app.py` - アプリロジック（Python / Pyodide上で実行）
+- `main.py` - エントリーポイント（状態管理・イベント登録）
+- `call_llm.py` - Groq APIとのストリーミング通信
+- `output.py` - Markdown変換・メッセージ表示
 - `manifest.json` - PWAマニフェスト
 - `sw.js` - Service Worker（オフラインキャッシュ、Pyodide CDNとGroq APIは対象外）
 - `icon-192.png` / `icon-512.png` - アプリアイコン
