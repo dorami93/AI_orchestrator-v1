@@ -1,5 +1,5 @@
-const CACHE = 'groq-chat-v3';
-const FILES = ['./', 'index.html', 'style.css', 'app.py', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const CACHE = 'groq-chat-v4';
+const FILES = ['./', 'index.html', 'style.css', 'main.py', 'call_llm.py', 'output.py', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
