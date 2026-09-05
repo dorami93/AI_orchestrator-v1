@@ -61,7 +61,7 @@ async function boot() {
     window.pyodide = pyodide;
     loadingText.textContent = 'アプリを起動中...';
 
-    const res = await fetch('app.py');
+    const res = await fetch('app.py?v=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('app.py の取得に失敗しました: ' + res.status);
     const code = await res.text();
 
