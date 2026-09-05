@@ -1,4 +1,4 @@
-const CACHE = 'groq-chat-v2';
+const CACHE = 'groq-chat-v3';
 const FILES = ['./', 'index.html', 'style.css', 'app.py', 'manifest.json', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
