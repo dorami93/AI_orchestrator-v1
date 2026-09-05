@@ -17,7 +17,8 @@ async def stream_groq_reply(chat, assistant_msg, api_key, model, on_update):
     )
     response = await fetch(GROQ_ENDPOINT, opts)
     if not response.ok:
-        raise Exception(f"API error: {response.status}")
+        detail = await response.text()
+        raise Exception(f"API error {response.status}: {detail}")
 
     reader = response.body.getReader()
     decoder = window.TextDecoder.new()
