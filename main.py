@@ -24,21 +24,55 @@ schema = None
 
 async def load_models():
     key = api_key.value.strip()
+    model.innerHTML = ""
+
     if not key:
+        placeholder = document.createElement("option")
+        placeholder.value = ""
+        placeholder.textContent = "先にAPI Keyを入力してください"
+        model.appendChild(placeholder)
         return
 
-    response = await fetch(
-        "https://api.groq.com/openai/v1/models",
-        {"headers": {"Authorization": f"Bearer {key}"}}
-    )
+    try:
+        response = await fetch(
+            "https://api.groq.com/openai/v1/models",
+            {"headers": {"Authorization": f"Bearer {key}"}}
+        )
+    except Exception as e:
+        placeholder = document.createElement("option")
+        placeholder.value = ""
+        placeholder.textContent = "通信エラー: モデル一覧を取得できません"
+        model.appendChild(placeholder)
+        print(f"[load_models] fetch failed: {e}")
+        return
 
     if not response.ok:
+        placeholder = document.createElement("option")
+        placeholder.value = ""
+        text = await response.text()
+        placeholder.textContent = f"API Keyが無効か権限がありません ({response.status})"
+        model.appendChild(placeholder)
+        print(f"[load_models] response not ok: {response.status} {text}")
         return
 
     data = json.loads(await response.text())
-    model.innerHTML = ""
 
-    for item in data["data"]:
+    # 音声専用モデル(whisper系)やガード用の小型モデルなど、
+    # チャット補完(chat/completions)で使えないモデルは選択肢から除外する。
+    excluded_prefixes = ("whisper", "canopylabs", "meta-llama/llama-prompt-guard", "llama-prompt-guard")
+    chat_models = [
+        item for item in data.get("data", [])
+        if not item["id"].lower().startswith(excluded_prefixes)
+    ]
+
+    if not chat_models:
+        placeholder = document.createElement("option")
+        placeholder.value = ""
+        placeholder.textContent = "利用可能なチャットモデルが見つかりません"
+        model.appendChild(placeholder)
+        return
+
+    for item in chat_models:
         option = document.createElement("option")
         option.value = item["id"]
         option.textContent = item["id"]
@@ -46,8 +80,10 @@ async def load_models():
 
     saved = localStorage.getItem("model") or DEFAULT_MODEL
 
-    if any(item["id"] == saved for item in data["data"]):
+    if any(item["id"] == saved for item in chat_models):
         model.value = saved
+    else:
+        model.value = chat_models[0]["id"]
 
 
 def open_settings(*_):
@@ -56,6 +92,12 @@ def open_settings(*_):
     tokens.value = localStorage.getItem("tokens") or "2000"
 
     settings.classList.remove("hidden")
+    asyncio.ensure_future(load_models())
+
+
+def on_api_key_change(*_):
+    # APIキーを入力し終えたタイミングでモデル一覧を再取得する。
+    # 保存ボタンを押すまで待つ必要がないようにする。
     asyncio.ensure_future(load_models())
 
 
@@ -134,3 +176,4 @@ bind("settingsBtn", document.getElementById("settingsBtn"), "onclick", open_sett
 bind("saveSettingsBtn", document.getElementById("saveSettingsBtn"), "onclick", save_settings)
 bind("closeSettingsBtn", document.getElementById("closeSettingsBtn"), "onclick", close_settings)
 bind("jsonInput", json_input, "onchange", lambda e: asyncio.ensure_future(select_json(e)))
+bind("apiKeyInput", api_key, "onchange", on_api_key_change)
