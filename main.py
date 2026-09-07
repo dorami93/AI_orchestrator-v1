@@ -120,8 +120,17 @@ def submit(event):
     asyncio.ensure_future(edit_message())
 
 
-document.getElementById("inputForm").onsubmit = submit
-document.getElementById("settingsBtn").onclick = open_settings
-document.getElementById("saveSettingsBtn").onclick = save_settings
-document.getElementById("closeSettingsBtn").onclick = close_settings
-json_input.onchange = lambda e: asyncio.ensure_future(select_json(e))
+def bind(el_id, el, attr, handler):
+    # キャッシュされた古いHTMLなどでDOM要素が見つからない場合に
+    # AttributeError で全体がクラッシュするのを防ぐ
+    if el is None:
+        print(f"[warn] element #{el_id} not found; skipping binding")
+        return
+    setattr(el, attr, handler)
+
+
+bind("inputForm", document.getElementById("inputForm"), "onsubmit", submit)
+bind("settingsBtn", document.getElementById("settingsBtn"), "onclick", open_settings)
+bind("saveSettingsBtn", document.getElementById("saveSettingsBtn"), "onclick", save_settings)
+bind("closeSettingsBtn", document.getElementById("closeSettingsBtn"), "onclick", close_settings)
+bind("jsonInput", json_input, "onchange", lambda e: asyncio.ensure_future(select_json(e)))
