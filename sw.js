@@ -1,7 +1,7 @@
 // キャッシュ名はデプロイの度に必ず変更する（例: 日付やコミットハッシュ）。
 // これを更新し忘れると、ユーザーのブラウザに古いHTML/PYファイルが残り続け、
 // 新しいコードとの不整合（例: 要素IDのズレによるエラー）が発生する。
-const CACHE = "groq-chat-v4";
+const CACHE = "groq-chat-v5";
 
 const ASSETS = [
   "./",
@@ -10,7 +10,8 @@ const ASSETS = [
   "./main.py",
   "./call_llm.py",
   "./output.py",
-  "./manifest.json"
+  "./manifest.json",
+  "./models.json"
 ];
 
 self.addEventListener("install", e => {
