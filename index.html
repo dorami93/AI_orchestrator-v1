@@ -18,11 +18,23 @@
 
 <div id="settingsModal" class="modal hidden">
   <div class="modalBox">
-    <input id="apiKeyInput" type="password" placeholder="Groq API Key">
+    <h2>設定</h2>
+
+    <label for="apiKeyInput">Groq API Key</label>
+    <input id="apiKeyInput" type="password" placeholder="gsk_...">
+
+    <label for="modelInput">モデル</label>
     <select id="modelInput"></select>
+
+    <label for="temperatureInput">Temperature</label>
     <input id="temperatureInput" type="number" min="0" max="2" step="0.1" value="0">
+
+    <label for="tokensInput">最大トークン数</label>
     <input id="tokensInput" type="number" min="1" value="2000">
+
+    <label for="jsonInput">JSONスキーマ（任意）</label>
     <input id="jsonInput" type="file" accept=".json">
+
     <div class="modalBtns">
       <button id="saveSettingsBtn">保存</button>
       <button id="closeSettingsBtn">閉じる</button>
@@ -30,7 +42,7 @@
   </div>
 </div>
 
-<button id="settingsBtn">設定</button>
+<button id="settingsBtn" title="設定">⚙︎</button>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script>
@@ -44,8 +56,20 @@ async function boot() {
 
   await pyodide.runPythonAsync("import main");
 
-  if ("serviceWorker" in navigator)
-    navigator.serviceWorker.register("sw.js");
+  if ("serviceWorker" in navigator) {
+    const reg = await navigator.serviceWorker.register("sw.js");
+
+    // 新しいService Workerが有効化されたら、古いキャッシュのまま
+    // 動き続けないように1回だけ自動リロードする
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
+
+    reg.update();
+  }
 }
 
 boot();
