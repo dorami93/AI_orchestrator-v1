@@ -1,17 +1,16 @@
 import json
-from js import window, fetch
-from pyodide.ffi import to_js
+from js import fetch
+
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
-async def stream_groq_reply(chat, assistant, key, model, temperature, tokens, schema, update):
+async def call_groq(messages, key, model, temperature, tokens, schema):
     body = {
         "model": model,
-        "messages": chat["messages"][:-1],
+        "messages": messages,
         "temperature": temperature,
-        "max_completion_tokens": tokens,
-        "stream": True
+        "max_completion_tokens": tokens
     }
 
     if schema:
@@ -24,38 +23,17 @@ async def stream_groq_reply(chat, assistant, key, model, temperature, tokens, sc
             }
         }
 
-    options = to_js({
+    response = await fetch(URL, {
         "method": "POST",
         "headers": {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {key}"
         },
         "body": json.dumps(body)
-    }, dict_converter=window.Object.fromEntries)
-
-    response = await fetch(URL, options)
+    })
 
     if not response.ok:
         raise Exception(await response.text())
 
-    reader = response.body.getReader()
-    decoder = window.TextDecoder.new()
-    buffer = ""
-
-    while True:
-        chunk = await reader.read()
-        if chunk.done:
-            break
-
-        buffer += decoder.decode(chunk.value, {"stream": True})
-        *lines, buffer = buffer.split("\n")
-
-        for line in lines:
-            if not line.startswith("data: ") or line[6:] == "[DONE]":
-                continue
-
-            delta = json.loads(line[6:])["choices"][0]["delta"].get("content")
-
-            if delta:
-                assistant["content"] += delta
-                update()
+    data = json.loads(await response.text())
+    return data["choices"][0]["message"]["content"]
