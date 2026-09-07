@@ -4,7 +4,7 @@
 
  Pythonで書かれたロジックを[Pyodide](<https://pyodide.org/>)上で実行します。
 
- 公開URL: https://dorami93.github.io/AI\_orchestrator-v1/
+ 公開URL: https://dorami93.github.io/AI_orchestrator-v1/
 
  ## 公開方法
 
