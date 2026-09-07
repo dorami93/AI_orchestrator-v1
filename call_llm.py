@@ -1,7 +1,6 @@
 import json
 from js import fetch
 
-
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
 
