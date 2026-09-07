@@ -9,7 +9,6 @@ from output import render_messages
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 input_el = document.getElementById("input")
-send_btn = document.getElementById("sendBtn")
 messages_el = document.getElementById("messages")
 settings = document.getElementById("settingsModal")
 
@@ -46,7 +45,8 @@ async def load_models():
         model.appendChild(option)
 
     saved = localStorage.getItem("model") or DEFAULT_MODEL
-    if any(x["id"] == saved for x in data["data"]):
+
+    if any(item["id"] == saved for item in data["data"]):
         model.value = saved
 
 
@@ -54,6 +54,7 @@ def open_settings(*_):
     api_key.value = localStorage.getItem("apiKey") or ""
     temperature.value = localStorage.getItem("temperature") or "0"
     tokens.value = localStorage.getItem("tokens") or "2000"
+
     settings.classList.remove("hidden")
     asyncio.ensure_future(load_models())
 
@@ -75,14 +76,17 @@ async def select_json(event):
 
     file = event.target.files.item(0)
 
-    if file:
-        try:
-            schema = json.loads(await file.text())
-        except Exception:
-            schema = None
+    if not file:
+        schema = None
+        return
+
+    try:
+        schema = json.loads(await file.text())
+    except Exception:
+        schema = None
 
 
-async def edit_message(*_):
+async def edit_message():
     text = input_el.value.strip()
     key = localStorage.getItem("apiKey")
 
@@ -102,14 +106,21 @@ async def edit_message(*_):
             int(localStorage.getItem("tokens") or "2000"),
             schema
         )
+
         messages.append({"role": "assistant", "content": result})
+
     except Exception as e:
         messages.append({"role": "assistant", "content": "エラー: " + str(e)})
 
     render_messages(messages_el, messages)
 
 
-send_btn.onclick = lambda *_: asyncio.ensure_future(edit_message())
+def submit(event):
+    event.preventDefault()
+    asyncio.ensure_future(edit_message())
+
+
+document.getElementById("inputForm").onsubmit = submit
 document.getElementById("settingsBtn").onclick = open_settings
 document.getElementById("saveSettingsBtn").onclick = save_settings
 document.getElementById("closeSettingsBtn").onclick = close_settings
