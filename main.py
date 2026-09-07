@@ -1,20 +1,12 @@
 import asyncio
 import json
-from js import document, localStorage
+from js import document, localStorage, fetch
 
 from call_llm import call_groq
 from output import render_messages
 
 
 DEFAULT_MODEL = "openai/gpt-oss-120b"
-
-# https://console.groq.com/docs/models#production-models
-PRODUCTION_MODELS = [
-    "llama-3.1-8b-instant",
-    "llama-3.3-70b-versatile",
-    "openai/gpt-oss-120b",
-    "openai/gpt-oss-20b",
-]
 
 input_el = document.getElementById("input")
 messages_el = document.getElementById("messages")
@@ -30,13 +22,18 @@ messages = []
 schema = None
 
 
-def load_models():
+# https://console.groq.com/docs/models#production-models のモデルIDをmodels.jsonに記載
+async def load_models():
+    response = await fetch("models.json")
+    model_ids = json.loads(await response.text())
+
     model.innerHTML = ""
-    for model_id in PRODUCTION_MODELS:
+    for model_id in model_ids:
         option = document.createElement("option")
         option.value = model_id
         option.textContent = model_id
         model.appendChild(option)
+
     model.value = localStorage.getItem("model") or DEFAULT_MODEL
 
 
@@ -44,7 +41,7 @@ def open_settings(*_):
     api_key.value = localStorage.getItem("apiKey") or ""
     temperature.value = localStorage.getItem("temperature") or "0"
     tokens.value = localStorage.getItem("tokens") or "2000"
-    load_models()
+    asyncio.ensure_future(load_models())
     settings.classList.remove("hidden")
 
 
