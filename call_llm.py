@@ -1,6 +1,5 @@
 import json
-from js import fetch, Object
-from pyodide.ffi import to_js
+from pyodide.http import pyfetch
 
 URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -23,22 +22,18 @@ async def call_groq(messages, key, model, temperature, tokens, schema):
             }
         }
 
-    init = to_js(
-        {
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {key}"
-            },
-            "body": json.dumps(body)
+    response = await pyfetch(
+        URL,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}"
         },
-        dict_converter=Object.fromEntries
+        body=json.dumps(body)
     )
 
-    response = await fetch(URL, init)
-
     if not response.ok:
-        raise Exception(await response.text())
+        raise Exception(await response.string())
 
-    data = json.loads(await response.text())
+    data = json.loads(await response.string())
     return data["choices"][0]["message"]["content"]
